@@ -36,10 +36,10 @@ namespace GameOfTHR3011
         {
             List<CharacterState> characters = new List<CharacterState>();
             // Players
-            characters.Add(new CharacterState("The Paladin", 89));
-            characters.Add(new CharacterState("The Monk", 47));
-            characters.Add(new CharacterState("The Wizard", 50));
-            characters.Add(new CharacterState("The Bard", 60));
+            characters.Add(new CharacterState("The Paladin", 90));
+            characters.Add(new CharacterState("The Monk", 60));
+            characters.Add(new CharacterState("The Wizard", 54));
+            characters.Add(new CharacterState("The Bard", 70));
             // Dragon
             characters.Add(new CharacterState("The dragon", 320));
 
