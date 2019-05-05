@@ -64,9 +64,9 @@ namespace GameOfTHR3011
 
         [FunctionName("Demo_GetStatus")]
         public static async Task<HttpResponseMessage> GetStatus(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage req,
-    [OrchestrationClient] IDurableOrchestrationClient starter,
-    ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage req,
+            [OrchestrationClient] IDurableOrchestrationClient starter,
+            ILogger log)
         {
             var encounter = await starter.ReadEntityStateAsync<EncounterState>(Encounter.ByKey(DRAGON_ENCOUNTER));
 
