@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
@@ -10,11 +11,6 @@ namespace GameOfTHR3011.Entities
     public static class Encounter
     {
 
-        public static EntityId ByKey(string key)
-        {
-            return new EntityId("Encounter", key);
-        }
-
         public class EncounterState
         {
             public IList<string> Participants { get; set; }
@@ -23,9 +19,9 @@ namespace GameOfTHR3011.Entities
             public IList<EntityId> getParticipantEntities()
             {
                 var entities = new List<EntityId>();
-                foreach (string name in Participants)
+                foreach (string characterKey in Participants)
                 {
-                    entities.Add(new EntityId("Character", name));
+                    entities.Add(new EntityId(nameof(Character), characterKey));
                 }
                 return entities;
             }
@@ -37,35 +33,43 @@ namespace GameOfTHR3011.Entities
             }
         }
 
+        public enum Ops
+        {
+            AddCharacter,
+            GetParticipanEntities,
+            AppendStatementToLog,
+            GetLog,
+            Reset
+        }
 
-        [FunctionName("Encounter")]
-        public static async Task Run([EntityTrigger(EntityName = "Encounter")] IDurableEntityContext context)
+
+        [FunctionName(nameof(Encounter))]
+        public static async Task HandleOperation([EntityTrigger(EntityName = nameof(Encounter))] IDurableEntityContext context)
         {
             var currentValue = context.GetState<EncounterState>();
             if (context.IsNewlyConstructed)
             {
                 currentValue = new EncounterState();
-                currentValue.Log.Add("--- Encounter! ---");
             }
 
-            switch (context.OperationName)
+            switch (Enum.Parse<Ops>(context.OperationName))
             {
-                case "AddCharacter":
+                case Ops.AddCharacter:
                     string character = context.GetInput<string>();
                     currentValue.Participants.Add(character);
                     currentValue.Log.Add($"{character} joined the fray!");
                     break;
-                case "GetParticipantEntities":
+                case Ops.GetParticipanEntities:
                     context.Return(currentValue.getParticipantEntities());
                     break;
-                case "AppendStatementToLog":
+                case Ops.AppendStatementToLog:
                     string statement = context.GetInput<string>();
                     currentValue.Log.Add(statement);
                     break;
-                case "GetLog":
+                case Ops.GetLog:
                     context.Return(currentValue.Log);
                     break;
-                case "Reset":
+                case Ops.Reset:
                     currentValue = new EncounterState();
                     break;
             }

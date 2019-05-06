@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
+using GameOfTHR3011.Entities;
 using GameOfTHR3011.Models;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Logging;
 using static GameOfTHR3011.Entities.Character;
 using static GameOfTHR3011.Models.Geometry;
 
@@ -17,12 +15,11 @@ namespace GameOfTHR3011
         {
             bool containsPoint(Point point);
         }
-
-
+        
         public class AoeAttack : IAreaOfEffect
         {
-            public EntityId Encounter { get; set; }
-            public EntityId Source { get; set; }
+            public EntityId Encounter { get; set; } // Encounter Entity
+            public EntityId Source { get; set; } // Character Entity
             public string Description { get; set; }
             public Damage AreaDamage { get; set; }
 
@@ -33,13 +30,17 @@ namespace GameOfTHR3011
             }
         }
 
+        public enum Orchestrations
+        {
+            ResolveAreaOfEffectDamage
+        }
 
-        [FunctionName("ResolveAreaOfEffectDamage")]
+        [FunctionName(nameof(Orchestrations.ResolveAreaOfEffectDamage))]
         public static async Task ResolveAreaOfEffectDamage([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var attack = context.GetInput<AoeAttack>();
 
-            var targets = await context.CallEntityAsync<List<EntityId>>(attack.Encounter, "GetParticipantEntities");
+            var targets = await context.CallEntityAsync<List<EntityId>>(attack.Encounter, nameof(Encounter.Ops.GetParticipanEntities));
 
 
 
@@ -47,19 +48,19 @@ namespace GameOfTHR3011
             {
 
 
-                context.SignalEntity(attack.Encounter, "AppendStatementToLog", attack.Description);
+                context.SignalEntity(attack.Encounter, nameof(Encounter.Ops.AppendStatementToLog), attack.Description);
 
 
                 foreach (EntityId character in targets)
                 {
-                    if (character.Equals(attack.Source) || !attack.containsPoint(await context.CallEntityAsync<Point>(character, "GetLocation")))
+                    if (character.Equals(attack.Source) || !attack.containsPoint(await context.CallEntityAsync<Point>(character, nameof(Character.Ops.GetLocation))))
                     {
                         continue;
                     }
                     else
                     {
-                        CharacterEvent damageEvent = await context.CallEntityAsync<CharacterEvent>(character, "ApplyDamage", attack.AreaDamage);
-                        context.SignalEntity(attack.Encounter, "AppendStatementToLog", damageEvent.EventMessage);
+                        CharacterEvent damageEvent = await context.CallEntityAsync<CharacterEvent>(character, nameof(Character.Ops.ApplyDamage), attack.AreaDamage);
+                        context.SignalEntity(attack.Encounter, nameof(Encounter.Ops.AppendStatementToLog), damageEvent.EventMessage);
                     }
                 }
             }

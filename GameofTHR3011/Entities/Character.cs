@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using GameOfTHR3011.Models;
@@ -11,12 +12,6 @@ namespace GameOfTHR3011.Entities
 {
     public static class Character
     {
-
-        public static EntityId ByKey(string key)
-        {
-            return new EntityId("Character", key);
-        }
-
         public class CharacterState
         {
             public EntityId Id { get; }
@@ -30,7 +25,7 @@ namespace GameOfTHR3011.Entities
             {
                 Name = name;
                 HitPoints = hp;
-                Id = new EntityId("Character", name);
+                Id = new EntityId(nameof(Character), name);
             }
         }
 
@@ -40,19 +35,28 @@ namespace GameOfTHR3011.Entities
             public string EventMessage { get; set;  }
         }
 
+        public enum Ops
+        {
+            SetStatistics,
+            GetLocation,
+            ApplyDamage
+        }
 
 
-        [FunctionName("Character")]
-        public static async Task Run([EntityTrigger(EntityName = "Character")] IDurableEntityContext context)
+        [FunctionName(nameof(Character))]
+        public static async Task HandleOperation([EntityTrigger(EntityName = nameof(Character))] IDurableEntityContext context)
         {
             CharacterState currentState = context.GetState<CharacterState>();
 
-            switch (context.OperationName)
+            switch (Enum.Parse<Ops>(context.OperationName))
             {
-                case "SetStatistics":
+                case Ops.SetStatistics:
                     currentState = context.GetInput<CharacterState>();
                     break;
-                case "ApplyDamage":
+                case Ops.GetLocation:
+                    context.Return(currentState.Location);
+                    break;
+                case Ops.ApplyDamage:
                     Damage damage = context.GetInput<Damage>();
                     // TODO check for type resistances/immunities/weaknesses
                     currentState.HitPoints -= damage.Magnitude;
